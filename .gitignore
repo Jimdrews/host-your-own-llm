@@ -1,3 +1,26 @@
+# Secrets
 .env
+
+# Virtual environments
 .venv/
+venv/
+
+# Python build and cache artifacts
 __pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Test and tool caches
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
