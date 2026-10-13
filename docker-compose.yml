@@ -1,0 +1,67 @@
+x-s3-client-env: &s3-client-env
+  AWS_ENDPOINT_URL: http://s3:9000
+  AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-}
+  AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-}
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_EC2_METADATA_DISABLED: "true"
+  S3_BUCKET: ${S3_BUCKET:-models}
+
+services:
+  s3:
+    image: rustfs/rustfs:1.0.1
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "${S3_PORT:-9000}:9000"
+      - "${S3_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - model-store:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  vllm:
+    build: ./image
+    image: host-your-own-llm/vllm:latest
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *s3-client-env
+      RUNAI_STREAMER_S3_USE_VIRTUAL_ADDRESSING: "0"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    ipc: host
+    depends_on:
+      s3:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  store:
+    image: host-your-own-llm/vllm:latest
+    profiles: [tools]
+    entrypoint: ["python3", "/opt/model_store.py"]
+    healthcheck:
+      disable: true
+    environment:
+      <<: *s3-client-env
+      HF_TOKEN: ${HF_TOKEN:-}
+      MODEL: ${MODEL:-}
+    depends_on:
+      s3:
+        condition: service_healthy
+
+volumes:
+  model-store:
