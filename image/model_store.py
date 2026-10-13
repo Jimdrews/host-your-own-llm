@@ -21,7 +21,7 @@ def model_id_from_env(bucket: str) -> str:
     prefix = f"s3://{bucket}/"
     if not model.startswith(prefix):
         sys.exit(f"MODEL ({model or 'unset'}) is not under {prefix}; pass a Hugging Face model id instead")
-    return model[len(prefix):].rstrip("/")
+    return model[len(prefix) :].rstrip("/")
 
 
 def keys(s3, bucket: str, prefix: str = "") -> list[str]:
@@ -71,7 +71,7 @@ def remove(s3, bucket: str, model_id: str) -> None:
     if not to_delete:
         sys.exit(f"error: s3://{bucket}/{model_id} is not in the model store")
     for i in range(0, len(to_delete), 1000):
-        batch = [{"Key": k} for k in to_delete[i:i + 1000]]
+        batch = [{"Key": k} for k in to_delete[i : i + 1000]]
         s3.delete_objects(Bucket=bucket, Delete={"Objects": batch})
     print(f"Removed s3://{bucket}/{model_id}")
 
