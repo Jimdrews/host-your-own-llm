@@ -1,11 +1,28 @@
 [project]
 name = "host-your-own-llm"
 version = "0.1.0"
-description = "Serve an LLM with vLLM in Docker, with model weights in a local S3 bucket"
+description = "Self-host any Hugging Face LLM on your own NVIDIA GPU behind an OpenAI-compatible API. One CLI, vLLM in Docker, models cached in a local S3 store."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "James Andrews", email = "james.andrews.dev@gmail.com" }]
 requires-python = ">=3.12"
+keywords = [
+    "llm", "vllm", "self-hosted", "local-llm", "openai-compatible", "llm-serving",
+    "huggingface", "docker", "gpu", "nvidia", "s3",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "httpx2>=2.13.1",
     "huggingface-hub>=1.33",
@@ -13,6 +30,11 @@ dependencies = [
     "rich>=15",
     "typer>=0.27.3",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Jimdrews/host-your-own-llm"
+Repository = "https://github.com/Jimdrews/host-your-own-llm"
+Issues = "https://github.com/Jimdrews/host-your-own-llm/issues"
 
 [project.scripts]
 llm = "host_your_own_llm.cli:main"
