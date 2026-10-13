@@ -77,6 +77,8 @@ uv run pytest              # adds end-to-end tests; needs Docker
 uv run pytest -m gpu       # serves real models; needs a free GPU
 ```
 
+Run `uv run pre-commit install` once to lint, format and type-check on every commit.
+
 ## License
 
 [Apache 2.0](LICENSE). Forks and redistributions must keep the [`NOTICE`](NOTICE) file crediting the original author.
