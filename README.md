@@ -1,7 +1,21 @@
 # host-your-own-llm
 
+[![CI](https://github.com/Jimdrews/host-your-own-llm/actions/workflows/ci.yml/badge.svg)](https://github.com/Jimdrews/host-your-own-llm/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
+[![Served by vLLM](https://img.shields.io/badge/served%20by-vLLM-orange.svg)](https://github.com/vllm-project/vllm)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 Run any Hugging Face model on your own GPU behind an OpenAI-compatible API.
 Models are downloaded once into a local store and reused, so switching between them is quick.
+
+## Features
+
+- **Any Hugging Face model** on your own NVIDIA GPU, served by [vLLM](https://github.com/vllm-project/vllm)
+- **OpenAI-compatible API**, so existing clients and SDKs work unchanged
+- **One-command setup** that checks each model fits your GPU before downloading it
+- **Find models** that suit your hardware with `llm models search`
+- **Fast switching**: models are cached locally, so changing models doesn't re-download them
 
 ## Requirements
 
@@ -11,6 +25,8 @@ Models are downloaded once into a local store and reused, so switching between t
 ## Quick start
 
 ```sh
+git clone https://github.com/Jimdrews/host-your-own-llm
+cd host-your-own-llm
 uv run llm serve
 ```
 
