@@ -14,7 +14,7 @@ Models are downloaded once into a local store and reused, so switching between t
 uv run llm serve
 ```
 
-The first run asks which model to use, the context length and whether to require an API key, then starts everything and prints a ready-to-use `curl` command.
+The first run asks which model to use (pick a preset, enter any Hugging Face id, or browse popular ones), the context length and whether to require an API key, then starts everything and prints a ready-to-use `curl` command.
 
 The API is at `http://localhost:8000/v1` and works with any OpenAI client:
 
@@ -32,6 +32,7 @@ reply = client.chat.completions.create(model="qwen2.5-0.5b-instruct", messages=[
 | `llm serve` | Start the model store and the model server |
 | `llm serve --reconfigure` | Ask the setup questions again |
 | `llm status` | Show what's running, the active model and the endpoint |
+| `llm models search [query]` | Find popular Hugging Face models that fit your GPU (`--trending` for what's new, `--all` to include ones too big) |
 | `llm models list` | List stored models (`*` marks the active one) |
 | `llm models add <id>` | Download a Hugging Face model into the store |
 | `llm models use <id> [--name <name>]` | Switch the served model, downloading it first if needed |
