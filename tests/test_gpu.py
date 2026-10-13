@@ -37,14 +37,23 @@ def request(port: int, path: str, body: dict | None = None, api_key: str = "") -
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     data = json.dumps(body).encode() if body is not None else None
-    with urllib.request.urlopen(urllib.request.Request(f"http://localhost:{port}{path}", data, headers), timeout=120) as r:
+    with urllib.request.urlopen(
+        urllib.request.Request(f"http://localhost:{port}{path}", data, headers), timeout=120
+    ) as r:
         return json.load(r)
 
 
 def chat(port: int, model: str, api_key: str = "") -> str:
-    reply = request(port, "/v1/chat/completions", {
-        "model": model, "messages": [{"role": "user", "content": "Say hello."}], "max_tokens": 10,
-    }, api_key)
+    reply = request(
+        port,
+        "/v1/chat/completions",
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": "Say hello."}],
+            "max_tokens": 10,
+        },
+        api_key,
+    )
     return reply["choices"][0]["message"]["content"]
 
 
@@ -102,15 +111,43 @@ def test_image_runs_without_cli(project):
     """The image on its own: plain `docker run` with environment variables, no compose for vLLM."""
     project.compose("stop", "vllm")  # free the GPU
     env = project.env()
-    subprocess.run([
-        "docker", "run", "-d", "--name", "hyol-gpu-test-standalone", "--gpus", "all", "--ipc=host",
-        "--network", f"{project.name}_default", "-p", f"{STANDALONE_PORT}:8000",
-        "-e", f"MODEL=s3://models/{FIRST}", "-e", "MAX_MODEL_LEN=4096", "-e", "SERVED_MODEL_NAME=standalone",
-        "-e", "AWS_ENDPOINT_URL=http://s3:9000", "-e", f"AWS_ACCESS_KEY_ID={env['S3_ACCESS_KEY']}",
-        "-e", f"AWS_SECRET_ACCESS_KEY={env['S3_SECRET_KEY']}", "-e", "AWS_DEFAULT_REGION=us-east-1",
-        "-e", "AWS_EC2_METADATA_DISABLED=true", "-e", "RUNAI_STREAMER_S3_USE_VIRTUAL_ADDRESSING=0",
-        IMAGE,
-    ], check=True, capture_output=True)
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            "hyol-gpu-test-standalone",
+            "--gpus",
+            "all",
+            "--ipc=host",
+            "--network",
+            f"{project.name}_default",
+            "-p",
+            f"{STANDALONE_PORT}:8000",
+            "-e",
+            f"MODEL=s3://models/{FIRST}",
+            "-e",
+            "MAX_MODEL_LEN=4096",
+            "-e",
+            "SERVED_MODEL_NAME=standalone",
+            "-e",
+            "AWS_ENDPOINT_URL=http://s3:9000",
+            "-e",
+            f"AWS_ACCESS_KEY_ID={env['S3_ACCESS_KEY']}",
+            "-e",
+            f"AWS_SECRET_ACCESS_KEY={env['S3_SECRET_KEY']}",
+            "-e",
+            "AWS_DEFAULT_REGION=us-east-1",
+            "-e",
+            "AWS_EC2_METADATA_DISABLED=true",
+            "-e",
+            "RUNAI_STREAMER_S3_USE_VIRTUAL_ADDRESSING=0",
+            IMAGE,
+        ],
+        check=True,
+        capture_output=True,
+    )
 
     deadline = time.monotonic() + 600
     while True:

@@ -54,20 +54,31 @@ class Project:
         return self.path / ".env"
 
     def write_env(self, **values: str) -> None:
-        base = {"COMPOSE_PROJECT_NAME": self.name, "API_PORT": str(self.api_port),
-                "S3_PORT": str(self.s3_port), "S3_CONSOLE_PORT": str(self.s3_port + 1)}
+        base = {
+            "COMPOSE_PROJECT_NAME": self.name,
+            "API_PORT": str(self.api_port),
+            "S3_PORT": str(self.s3_port),
+            "S3_CONSOLE_PORT": str(self.s3_port + 1),
+        }
         self.env_path.write_text("".join(f"{k}={v}\n" for k, v in {**base, **values}.items()))
 
     def env(self) -> dict[str, str]:
         from host_your_own_llm.adapters.envfile import read_env
+
         return read_env(self.env_path)
 
     def llm(self, *args: str, input: str | None = None, timeout: int = 600) -> subprocess.CompletedProcess:
         """Run the real CLI inside this project. A command still running after `timeout` fails the test."""
         cmd = ["uv", "run", "--project", str(ROOT), "llm", *args]
         process = subprocess.Popen(
-            cmd, cwd=self.path, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", errors="replace",
+            cmd,
+            cwd=self.path,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
             env={**os.environ, "COLUMNS": "200", "NO_COLOR": "1", "PYTHONIOENCODING": "utf-8"},
             start_new_session=sys.platform != "win32",
         )
@@ -80,25 +91,38 @@ class Project:
         return subprocess.CompletedProcess(cmd, process.returncode, stdout, stderr)
 
     def compose(self, *args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(["docker", "compose", "-p", self.name, *args], cwd=self.path, capture_output=True, text=True)
+        return subprocess.run(
+            ["docker", "compose", "-p", self.name, *args], cwd=self.path, capture_output=True, text=True
+        )
 
     def containers(self) -> list[str]:
         return self.compose("ps", "-q").stdout.split()
 
     def volume_exists(self) -> bool:
-        return self.volume in subprocess.run(["docker", "volume", "ls", "-q"], capture_output=True, text=True).stdout.split()
+        return (
+            self.volume
+            in subprocess.run(["docker", "volume", "ls", "-q"], capture_output=True, text=True).stdout.split()
+        )
 
     def s3_client(self):
         """A client on the host, for checking what is really in the store."""
         import boto3
+
         env = self.env()
-        return boto3.client("s3", endpoint_url=f"http://localhost:{self.s3_port}", region_name="us-east-1",
-                            aws_access_key_id=env["S3_ACCESS_KEY"], aws_secret_access_key=env["S3_SECRET_KEY"])
+        return boto3.client(
+            "s3",
+            endpoint_url=f"http://localhost:{self.s3_port}",
+            region_name="us-east-1",
+            aws_access_key_id=env["S3_ACCESS_KEY"],
+            aws_secret_access_key=env["S3_SECRET_KEY"],
+        )
 
     def bucket_keys(self, prefix: str = "") -> list[str]:
         s3 = self.s3_client()
         try:
-            pages = s3.get_paginator("list_objects_v2").paginate(Bucket=self.env().get("S3_BUCKET", "models"), Prefix=prefix)
+            pages = s3.get_paginator("list_objects_v2").paginate(
+                Bucket=self.env().get("S3_BUCKET", "models"), Prefix=prefix
+            )
             return sorted(obj["Key"] for page in pages for obj in page.get("Contents", []))
         except s3.exceptions.NoSuchBucket:
             return []

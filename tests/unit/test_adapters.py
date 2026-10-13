@@ -6,11 +6,12 @@ import httpx2
 import pytest
 from huggingface_hub.errors import GatedRepoError
 
-from fakes import FakeCompose
 from host_your_own_llm.adapters import gpu, huggingface
 from host_your_own_llm.adapters.compose import Compose
 from host_your_own_llm.adapters.store import ModelStore
 from host_your_own_llm.errors import CliError, ModelError
+
+from fakes import FakeCompose
 
 
 def completed(stdout="", returncode=0, stderr=""):
@@ -40,8 +41,10 @@ def test_compose_failure_shows_output(tmp_path, capsys):
 
 
 def test_compose_ps(tmp_path):
-    lines = [json.dumps({"Service": "s3", "State": "running", "Health": "healthy"}),
-             json.dumps({"Service": "vllm", "State": "exited", "Health": ""})]
+    lines = [
+        json.dumps({"Service": "s3", "State": "running", "Health": "healthy"}),
+        json.dumps({"Service": "vllm", "State": "exited", "Health": ""}),
+    ]
     states = Compose(tmp_path, Runner(completed("\n".join(lines) + "\n"))).ps()
     assert [(s.service, s.effective) for s in states] == [("s3", "healthy"), ("vllm", "exited")]
 
@@ -87,6 +90,7 @@ def test_gated_error_is_not_reported_as_not_found(monkeypatch):
 
 def test_detect_gpu():
     found = gpu.detect_gpu(Runner(completed("NVIDIA GeForce RTX 4070, 12282\n")))
+    assert found is not None
     assert found.name == "NVIDIA GeForce RTX 4070"
     assert round(found.vram_gb) == 12
 
@@ -108,12 +112,14 @@ def test_search_models(monkeypatch):
 
     def fake_list_models(**kwargs):
         calls.append(kwargs)
-        return iter([
-            listed("org/gguf-only"),
-            listed("org/empty", parameters={}),
-            listed("org/open", parameters={"BF16": 1000}),
-            listed("org/gated", parameters={"F32": 10}, gated="manual"),
-        ])
+        return iter(
+            [
+                listed("org/gguf-only"),
+                listed("org/empty", parameters={}),
+                listed("org/open", parameters={"BF16": 1000}),
+                listed("org/gated", parameters={"F32": 10}, gated="manual"),
+            ]
+        )
 
     monkeypatch.setattr(huggingface, "list_models", fake_list_models)
     models = list(huggingface.HubClient().search_models("org", trending=True))

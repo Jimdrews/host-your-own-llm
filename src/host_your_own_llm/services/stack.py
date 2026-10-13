@@ -3,12 +3,12 @@
 import time
 from collections.abc import Callable
 
-from ..adapters.compose import Compose, check_docker
+from ..adapters.compose import check_docker
 from ..adapters.envfile import EnvFile
-from ..adapters.store import ModelStore
 from ..adapters.vllm_api import is_healthy
 from ..domain import StackConfig, StackStatus
 from ..errors import CliError
+from ..ports import ComposePort, StorePort
 from ..ui import render
 from ..ui.console import console
 from ..ui.prompter import Prompter
@@ -20,8 +20,8 @@ POLL_INTERVAL = 3
 class StackService:
     def __init__(
         self,
-        compose: Compose,
-        store: ModelStore,
+        compose: ComposePort,
+        store: StorePort,
         env: EnvFile,
         prompter: Prompter,
         configure: Callable[[], bool],
@@ -46,9 +46,9 @@ class StackService:
     def serve(self, reconfigure: bool = False) -> None:
         if not self.docker_check():
             console.print("[yellow]Docker doesn't list the NVIDIA runtime; vLLM needs GPU access.[/yellow]")
-        if reconfigure or not self.env.exists():
-            if not self.configure():
-                raise CliError("Setup cancelled.")
+        needs_setup = reconfigure or not self.env.exists()
+        if needs_setup and not self.configure():
+            raise CliError("Setup cancelled.")
         config = self.env.load()
 
         with console.status("Building the image (the first build downloads ~10 GB)..."):

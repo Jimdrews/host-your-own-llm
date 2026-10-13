@@ -87,8 +87,12 @@ def suggestions_table(suggestions: Iterable[ModelSuggestion]) -> Table:
         model = suggestion.model
         notes = [note for note in (FIT_NOTES.get(suggestion.fit), "gated" if model.gated else None) if note]
         table.add_row(
-            str(i), model.model_id, f"{model.size_gb:.1f} GB", compact_count(model.downloads),
-            compact_count(model.likes), ", ".join(notes),
+            str(i),
+            model.model_id,
+            f"{model.size_gb:.1f} GB",
+            compact_count(model.downloads),
+            compact_count(model.likes),
+            ", ".join(notes),
         )
     return table
 

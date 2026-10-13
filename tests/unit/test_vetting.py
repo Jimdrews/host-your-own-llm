@@ -1,22 +1,26 @@
 import pytest
 
-from fakes import FakeHub, FakePrompter
 from host_your_own_llm.domain import FitVerdict, GpuInfo, ModelCheck
 from host_your_own_llm.errors import ModelError
 from host_your_own_llm.services.vetting import ModelVetter, assess_fit
+
+from fakes import FakeHub, FakePrompter
 
 GB = 1024**3
 GPU = GpuInfo(name="Test GPU", vram_gb=10)
 
 
-@pytest.mark.parametrize(("size_gb", "vram_gb", "verdict"), [
-    (5, None, FitVerdict.UNKNOWN),
-    (5, 10, FitVerdict.FITS),
-    (7.5, 10, FitVerdict.FITS),
-    (8, 10, FitVerdict.TIGHT),
-    (9, 10, FitVerdict.TIGHT),
-    (9.5, 10, FitVerdict.TOO_BIG),
-])
+@pytest.mark.parametrize(
+    ("size_gb", "vram_gb", "verdict"),
+    [
+        (5, None, FitVerdict.UNKNOWN),
+        (5, 10, FitVerdict.FITS),
+        (7.5, 10, FitVerdict.FITS),
+        (8, 10, FitVerdict.TIGHT),
+        (9, 10, FitVerdict.TIGHT),
+        (9.5, 10, FitVerdict.TOO_BIG),
+    ],
+)
 def test_assess_fit(size_gb, vram_gb, verdict):
     assert assess_fit(size_gb, vram_gb) == verdict
 

@@ -16,9 +16,9 @@ def reports_errors[**P](command: Callable[P, None]) -> Callable[P, None]:
             command(*args, **kwargs)
         except CliError as e:
             console.print(f"[red]{e}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         except (KeyboardInterrupt, EOFError):
             console.print("\nCancelled.")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     return wrapper

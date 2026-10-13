@@ -7,6 +7,17 @@ from .presets import PRESETS, Preset
 from .stack import SERVICES, ServiceState, StackStatus
 
 __all__ = [
-    "PRESETS", "SERVICES", "FitVerdict", "GpuInfo", "ModelCheck", "ModelSuggestion", "ModelSummary", "Preset",
-    "ServiceState", "StackConfig", "StackStatus", "default_served_name", "weights_size",
+    "PRESETS",
+    "SERVICES",
+    "FitVerdict",
+    "GpuInfo",
+    "ModelCheck",
+    "ModelSuggestion",
+    "ModelSummary",
+    "Preset",
+    "ServiceState",
+    "StackConfig",
+    "StackStatus",
+    "default_served_name",
+    "weights_size",
 ]

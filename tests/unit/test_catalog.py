@@ -1,9 +1,10 @@
 import pytest
 
-from fakes import FakePrompter, FakeStack, FakeStore, FakeVetter
 from host_your_own_llm.adapters.envfile import EnvFile, read_env
 from host_your_own_llm.errors import CliError
 from host_your_own_llm.services.catalog import ModelCatalog
+
+from fakes import FakePrompter, FakeStack, FakeStore, FakeVetter
 
 
 @pytest.fixture
@@ -14,7 +15,9 @@ def env(tmp_path):
 
 
 def catalog(env, store=None, vetter=None, prompter=None, stack=None):
-    return ModelCatalog(env, store or FakeStore(), vetter or FakeVetter(token=None), prompter or FakePrompter(), stack or FakeStack())
+    return ModelCatalog(
+        env, store or FakeStore(), vetter or FakeVetter(token=None), prompter or FakePrompter(), stack or FakeStack()
+    )
 
 
 def test_needs_configuration(tmp_path):

@@ -1,10 +1,11 @@
 import pytest
 
-from fakes import FakeClock, FakeCompose, FakePrompter, FakeStore
 from host_your_own_llm.adapters.envfile import EnvFile
 from host_your_own_llm.domain import ServiceState
 from host_your_own_llm.errors import CliError
 from host_your_own_llm.services.stack import StackService
+
+from fakes import FakeClock, FakeCompose, FakePrompter, FakeStore
 
 
 @pytest.fixture
@@ -14,11 +15,21 @@ def env(tmp_path):
     return EnvFile(path)
 
 
-def service(env, compose=None, store=None, prompter=None, configure=lambda: True, healthy=True, nvidia=True, clock=None):
+def service(
+    env, compose=None, store=None, prompter=None, configure=lambda: True, healthy=True, nvidia=True, clock=None
+):
     clock = clock or FakeClock()
     return StackService(
-        compose or FakeCompose(), store or FakeStore(), env, prompter or FakePrompter(), configure,
-        docker_check=lambda: nvidia, health=lambda url: healthy, clock=clock, sleep=clock.sleep, timeout=30,
+        compose or FakeCompose(),
+        store or FakeStore(),
+        env,
+        prompter or FakePrompter(),
+        configure,
+        docker_check=lambda: nvidia,
+        health=lambda url: healthy,
+        clock=clock,
+        sleep=clock.sleep,
+        timeout=30,
     )
 
 
@@ -83,14 +94,17 @@ def test_purge_deletes_volume(env):
 
 
 def test_status_asks_the_api(env):
-    compose = FakeCompose(ps=[
-        ServiceState(Service="s3", State="running", Health="healthy"),
-        ServiceState(Service="vllm", State="running", Health="starting"),
-    ])
+    compose = FakeCompose(
+        ps=[
+            ServiceState(Service="s3", State="running", Health="healthy"),
+            ServiceState(Service="vllm", State="running", Health="starting"),
+        ]
+    )
     status = service(env, compose, healthy=True).status()
     assert status.state("s3") == "healthy"
     assert status.state("vllm") == "healthy"
-    assert status.api_up and status.config.active_model_id == "org/m"
+    assert status.api_up
+    assert status.config is not None and status.config.active_model_id == "org/m"
 
 
 def test_status_when_stopped_and_unconfigured(tmp_path):

@@ -111,7 +111,7 @@ class FakePrompter:
 
     def ask_int(self, question: str, default: int) -> int:
         answer = self._next(question)
-        return default if answer == "" else int(answer)
+        return default if answer == "" else int(str(answer))
 
     def ask_secret(self, question: str) -> str | None:
         if not self.tty:

@@ -8,7 +8,9 @@ def detect_gpu(runner: Runner = subprocess.run) -> GpuInfo | None:
     try:
         out = runner(
             ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.splitlines()[0]
     except (OSError, subprocess.CalledProcessError, IndexError):
         return None

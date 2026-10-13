@@ -1,17 +1,15 @@
 """The models in the store: list, add, switch and remove."""
 
 from ..adapters.envfile import EnvFile
-from ..adapters.store import ModelStore
 from ..domain import default_served_name
 from ..errors import CliError
+from ..ports import StackPort, StorePort, VetterPort
 from ..ui.console import console
 from ..ui.prompter import Prompter
-from .stack import StackService
-from .vetting import ModelVetter
 
 
 class ModelCatalog:
-    def __init__(self, env: EnvFile, store: ModelStore, vetter: ModelVetter, prompter: Prompter, stack: StackService):
+    def __init__(self, env: EnvFile, store: StorePort, vetter: VetterPort, prompter: Prompter, stack: StackPort):
         self.env = env
         self.store = store
         self.vetter = vetter

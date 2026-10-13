@@ -1,10 +1,11 @@
 import pytest
 
-from fakes import FakeHub, FakePrompter
 from host_your_own_llm.domain import FitVerdict, GpuInfo, ModelSummary
 from host_your_own_llm.errors import CliError, ModelError
 from host_your_own_llm.services.discovery import ModelDiscovery
 from host_your_own_llm.services.vetting import ModelVetter
+
+from fakes import FakeHub, FakePrompter
 
 GB = 1024**3
 LISTING = [
@@ -14,7 +15,10 @@ LISTING = [
 ]
 
 
-def discovery(hub, gpu=GpuInfo(name="Test GPU", vram_gb=10)):
+GPU = GpuInfo(name="Test GPU", vram_gb=10)
+
+
+def discovery(hub, gpu=GPU):
     return ModelDiscovery(hub, ModelVetter(hub, FakePrompter(), gpu_probe=lambda: gpu))
 
 

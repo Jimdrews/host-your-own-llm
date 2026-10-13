@@ -5,10 +5,13 @@ from host_your_own_llm.ui import render
 from host_your_own_llm.ui.console import console
 
 
-@pytest.mark.parametrize(("platform", "curl", "body"), [
-    ("win32", "curl.exe ", '{\\"model\\":\\"m\\"'),
-    ("linux", "curl ", '{"model":"m"'),
-])
+@pytest.mark.parametrize(
+    ("platform", "curl", "body"),
+    [
+        ("win32", "curl.exe ", '{\\"model\\":\\"m\\"'),
+        ("linux", "curl ", '{"model":"m"'),
+    ],
+)
 def test_usage_command(platform, curl, body):
     command = render.usage_command(StackConfig(SERVED_MODEL_NAME="m"), platform)
     assert command.startswith(curl) and body in command
@@ -18,7 +21,7 @@ def test_usage_command(platform, curl, body):
 def test_usage_command_with_api_key_and_port():
     config = StackConfig(SERVED_MODEL_NAME="m", VLLM_API_KEY="sk-1", API_PORT=18000)
     command = render.usage_command(config, "linux")
-    assert 'Authorization: Bearer sk-1' in command
+    assert "Authorization: Bearer sk-1" in command
     assert "http://localhost:18000/v1/chat/completions" in command
 
 
@@ -43,7 +46,9 @@ def test_models_table_marks_active(capsys):
     assert lines == [["a/one"], ["*", "b/two"]]
 
 
-@pytest.mark.parametrize(("n", "text"), [(0, "0"), (999, "999"), (1790, "1.8k"), (30604529, "30.6M"), (2_500_000_000, "2.5B")])
+@pytest.mark.parametrize(
+    ("n", "text"), [(0, "0"), (999, "999"), (1790, "1.8k"), (30604529, "30.6M"), (2_500_000_000, "2.5B")]
+)
 def test_compact_count(n, text):
     assert render.compact_count(n) == text
 
@@ -51,7 +56,9 @@ def test_compact_count(n, text):
 def test_suggestions_table(capsys):
     gb = 1024**3
     suggestions = [
-        ModelSuggestion(model=ModelSummary(model_id="org/a", downloads=1500, likes=12, size_bytes=gb), fit=FitVerdict.FITS),
+        ModelSuggestion(
+            model=ModelSummary(model_id="org/a", downloads=1500, likes=12, size_bytes=gb), fit=FitVerdict.FITS
+        ),
         ModelSuggestion(model=ModelSummary(model_id="org/b", gated=True, size_bytes=8 * gb), fit=FitVerdict.TIGHT),
         ModelSuggestion(model=ModelSummary(model_id="org/c", size_bytes=20 * gb), fit=FitVerdict.TOO_BIG),
     ]

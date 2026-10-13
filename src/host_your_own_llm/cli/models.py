@@ -35,7 +35,9 @@ def search(
     show_all: Annotated[bool, typer.Option("--all", help="include models too big for your GPU")] = False,
 ) -> None:
     """Find popular models on Hugging Face that fit your GPU."""
-    suggestions = deps.build_services().discovery.suggest(query, trending=trending, limit=limit, include_too_big=show_all)
+    suggestions = deps.build_services().discovery.suggest(
+        query, trending=trending, limit=limit, include_too_big=show_all
+    )
     if not suggestions:
         console.print("No matching models.")
         return

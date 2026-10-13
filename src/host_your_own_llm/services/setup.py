@@ -5,12 +5,12 @@ from collections.abc import Sequence
 
 from ..adapters.envfile import EnvFile
 from ..domain import PRESETS, Preset, default_served_name
+from ..errors import CliError
+from ..ports import VetterPort
 from ..ui import render
 from ..ui.console import console
-from ..errors import CliError
 from ..ui.prompter import Prompter
 from .discovery import ModelDiscovery
-from .vetting import ModelVetter
 
 BROWSE_LIMIT = 10
 
@@ -19,7 +19,7 @@ class SetupWizard:
     def __init__(
         self,
         env: EnvFile,
-        vetter: ModelVetter,
+        vetter: VetterPort,
         prompter: Prompter,
         discovery: ModelDiscovery,
         presets: Sequence[Preset] = PRESETS,
@@ -48,14 +48,16 @@ class SetupWizard:
         else:
             api_key = ""
 
-        config = existing.model_copy(update={
-            "s3_secret_key": existing.s3_secret_key or secrets.token_urlsafe(24),
-            "model": existing.uri_for(model_id),
-            "hf_token": token,
-            "max_model_len": max_len,
-            "served_model_name": served_name,
-            "vllm_api_key": api_key,
-        })
+        config = existing.model_copy(
+            update={
+                "s3_secret_key": existing.s3_secret_key or secrets.token_urlsafe(24),
+                "model": existing.uri_for(model_id),
+                "hf_token": token,
+                "max_model_len": max_len,
+                "served_model_name": served_name,
+                "vllm_api_key": api_key,
+            }
+        )
 
         console.rule("Summary")
         console.print(render.summary_table(config))

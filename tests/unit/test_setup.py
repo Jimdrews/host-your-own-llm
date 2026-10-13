@@ -1,11 +1,15 @@
-from fakes import FakeHub, FakePrompter, FakeVetter
 from host_your_own_llm.adapters.envfile import EnvFile, read_env
 from host_your_own_llm.domain import ModelSummary
 from host_your_own_llm.errors import ModelError
 from host_your_own_llm.services.discovery import ModelDiscovery
 from host_your_own_llm.services.setup import SetupWizard
 
-POPULAR = [ModelSummary(model_id="org/popular", size_bytes=1024**3), ModelSummary(model_id="org/second", size_bytes=1024**3)]
+from fakes import FakeHub, FakePrompter, FakeVetter
+
+POPULAR = [
+    ModelSummary(model_id="org/popular", size_bytes=1024**3),
+    ModelSummary(model_id="org/second", size_bytes=1024**3),
+]
 
 
 def wizard(path, *answers, vetter=None, listing=POPULAR):
@@ -81,6 +85,8 @@ def test_browse_can_go_back(tmp_path, capsys):
 
 def test_browse_offline_goes_back(tmp_path, capsys):
     path = tmp_path / ".env"
-    assert wizard(path, 7, "", 1, "", "", False, True, listing=ModelError("Couldn't reach Hugging Face: offline")).configure()
+    assert wizard(
+        path, 7, "", 1, "", "", False, True, listing=ModelError("Couldn't reach Hugging Face: offline")
+    ).configure()
     assert "Couldn't reach Hugging Face" in capsys.readouterr().out
     assert read_env(path)["MODEL"] == "s3://models/Qwen/Qwen2.5-0.5B-Instruct"

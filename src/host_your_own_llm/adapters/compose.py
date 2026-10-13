@@ -30,7 +30,9 @@ class Compose:
 
     def run(self, *args: str, quiet: bool = False) -> str:
         """Run docker compose. With quiet, output is only shown if the command fails."""
-        result = self.runner(["docker", "compose", "--progress", "quiet", *args], cwd=self.root, capture_output=quiet, text=True)
+        result = self.runner(
+            ["docker", "compose", "--progress", "quiet", *args], cwd=self.root, capture_output=quiet, text=True
+        )
         if result.returncode != 0:
             if quiet:
                 console.print(result.stdout + result.stderr, markup=False, highlight=False)

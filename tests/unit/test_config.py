@@ -5,7 +5,9 @@ from host_your_own_llm.domain import StackConfig, default_served_name, weights_s
 
 
 def test_blank_values_take_defaults():
-    config = StackConfig.model_validate({"API_PORT": "", "MAX_MODEL_LEN": "", "S3_BUCKET": " ", "GPU_MEMORY_UTILIZATION": ""})
+    config = StackConfig.model_validate(
+        {"API_PORT": "", "MAX_MODEL_LEN": "", "S3_BUCKET": " ", "GPU_MEMORY_UTILIZATION": ""}
+    )
     assert config.api_port is None
     assert config.max_model_len == 8192
     assert config.s3_bucket == "models"
@@ -41,8 +43,16 @@ def test_display_name_falls_back_to_model():
 def test_to_env_writes_setup_keys_only():
     env = StackConfig.model_validate({"API_PORT": "18000", "GPU_MEMORY_UTILIZATION": "0.5"}).to_env()
     assert list(env) == [
-        "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_BUCKET", "MODEL", "HF_TOKEN", "MAX_MODEL_LEN",
-        "GPU_MEMORY_UTILIZATION", "SERVED_MODEL_NAME", "VLLM_API_KEY", "EXTRA_ARGS",
+        "S3_ACCESS_KEY",
+        "S3_SECRET_KEY",
+        "S3_BUCKET",
+        "MODEL",
+        "HF_TOKEN",
+        "MAX_MODEL_LEN",
+        "GPU_MEMORY_UTILIZATION",
+        "SERVED_MODEL_NAME",
+        "VLLM_API_KEY",
+        "EXTRA_ARGS",
     ]
     assert env["GPU_MEMORY_UTILIZATION"] == "0.50"
     assert env["MAX_MODEL_LEN"] == "8192"

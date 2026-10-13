@@ -8,8 +8,9 @@ import time
 
 import pytest
 
-from conftest import make_project
 from host_your_own_llm.adapters.gpu import detect_gpu
+
+from conftest import make_project
 
 pytestmark = pytest.mark.functional
 
@@ -20,8 +21,14 @@ PHI = "hf-internal-testing/tiny-random-PhiForCausalLM"  # 0.3 MB
 @pytest.fixture(scope="module")
 def project(tmp_path_factory):
     project = make_project(tmp_path_factory, "hyol-test", api_port=18000, s3_port=19000)
-    project.write_env(S3_ACCESS_KEY="testkey", S3_SECRET_KEY="test-secret-123", S3_BUCKET="models",
-                      MODEL=f"s3://models/{LLAMA}", SERVED_MODEL_NAME="tiny-llama", HF_TOKEN="")
+    project.write_env(
+        S3_ACCESS_KEY="testkey",
+        S3_SECRET_KEY="test-secret-123",
+        S3_BUCKET="models",
+        MODEL=f"s3://models/{LLAMA}",
+        SERVED_MODEL_NAME="tiny-llama",
+        HF_TOKEN="",
+    )
     yield project
     project.destroy()
 
@@ -93,10 +100,13 @@ def test_interrupted_copy_is_completed(project):
     assert stored(project) == sorted([LLAMA, PHI])
 
 
-@pytest.mark.parametrize(("model_id", "message"), [
-    ("nobody-here/definitely-not-a-model", "not found"),
-    ("hf-internal-testing/tiny-random-GPT2LMHeadModel", "no .safetensors"),
-])
+@pytest.mark.parametrize(
+    ("model_id", "message"),
+    [
+        ("nobody-here/definitely-not-a-model", "not found"),
+        ("hf-internal-testing/tiny-random-GPT2LMHeadModel", "no .safetensors"),
+    ],
+)
 def test_unusable_models_are_rejected(project, model_id, message):
     result = project.llm("models", "add", model_id)
     assert result.returncode == 1

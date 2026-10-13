@@ -2,11 +2,11 @@
 
 import uuid
 
-from .compose import Compose
+from ..ports import ComposePort
 
 
 class ModelStore:
-    def __init__(self, compose: Compose):
+    def __init__(self, compose: ComposePort):
         self.compose = compose
 
     def start(self) -> None:
