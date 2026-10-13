@@ -1,0 +1,33 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. uv run llm models add ...
+        2. uv run llm serve
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of `uv run llm status`
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, GPU and VRAM, Docker version
+      placeholder: Windows 11 + WSL2, RTX 3060 12 GB, Docker Desktop 4.x
+    validations:
+      required: true
