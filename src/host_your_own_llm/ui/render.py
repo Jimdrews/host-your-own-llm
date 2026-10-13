@@ -60,6 +60,7 @@ def presets_table(presets: Iterable[Preset]) -> Table:
     for count, preset in enumerate(presets, 1):
         table.add_row(str(count), preset.model_id, preset.note)
     table.add_row(str(count + 1), "Other", "Enter any Hugging Face model id")
+    table.add_row(str(count + 2), "Browse", "Search popular models on Hugging Face")
     return table
 
 

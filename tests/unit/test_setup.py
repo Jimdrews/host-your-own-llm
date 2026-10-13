@@ -1,10 +1,17 @@
-from fakes import FakePrompter, FakeVetter
+from fakes import FakeHub, FakePrompter, FakeVetter
 from host_your_own_llm.adapters.envfile import EnvFile, read_env
+from host_your_own_llm.domain import ModelSummary
+from host_your_own_llm.errors import ModelError
+from host_your_own_llm.services.discovery import ModelDiscovery
 from host_your_own_llm.services.setup import SetupWizard
 
+POPULAR = [ModelSummary(model_id="org/popular", size_bytes=1024**3), ModelSummary(model_id="org/second", size_bytes=1024**3)]
 
-def wizard(path, *answers, vetter=None):
-    return SetupWizard(EnvFile(path), vetter or FakeVetter(token=None), FakePrompter(*answers))
+
+def wizard(path, *answers, vetter=None, listing=POPULAR):
+    vetter = vetter or FakeVetter(token=None)
+    discovery = ModelDiscovery(FakeHub(listing=listing), vetter)
+    return SetupWizard(EnvFile(path), vetter, FakePrompter(*answers), discovery)
 
 
 def test_first_run_writes_env(tmp_path):
@@ -55,3 +62,25 @@ def test_rejected_model_asks_again(tmp_path):
     env = read_env(tmp_path / ".env")
     assert env["MODEL"] == "s3://models/Qwen/Qwen2.5-1.5B-Instruct"
     assert env["HF_TOKEN"] == "hf"
+
+
+def test_browse_picks_a_popular_model(tmp_path):
+    vetter = FakeVetter()
+    # browse, blank search, pick #2, then default context, default name, no API key, write .env
+    assert wizard(tmp_path / ".env", 7, "", 2, "", "", False, True, vetter=vetter).configure()
+    assert vetter.vetted == ["org/second"]
+    assert read_env(tmp_path / ".env")["MODEL"] == "s3://models/org/second"
+
+
+def test_browse_can_go_back(tmp_path, capsys):
+    # browse, search "zzz" (nothing), browse again, go back with 0, then preset 1
+    assert wizard(tmp_path / ".env", 7, "zzz", 7, "", 0, 1, "", "", False, True).configure()
+    assert "No matching models" in capsys.readouterr().out
+    assert read_env(tmp_path / ".env")["MODEL"] == "s3://models/Qwen/Qwen2.5-0.5B-Instruct"
+
+
+def test_browse_offline_goes_back(tmp_path, capsys):
+    path = tmp_path / ".env"
+    assert wizard(path, 7, "", 1, "", "", False, True, listing=ModelError("Couldn't reach Hugging Face: offline")).configure()
+    assert "Couldn't reach Hugging Face" in capsys.readouterr().out
+    assert read_env(path)["MODEL"] == "s3://models/Qwen/Qwen2.5-0.5B-Instruct"

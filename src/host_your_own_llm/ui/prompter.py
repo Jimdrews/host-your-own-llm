@@ -27,7 +27,7 @@ class RichPrompter:
     def ask(self, question: str, default: str | None = None) -> str:
         if default is None:
             return Prompt.ask(question, console=console).strip()
-        return Prompt.ask(question, default=default, console=console).strip()
+        return Prompt.ask(question, default=default, show_default=bool(default), console=console).strip()
 
     def ask_int(self, question: str, default: int) -> int:
         return IntPrompt.ask(question, default=default, console=console)
