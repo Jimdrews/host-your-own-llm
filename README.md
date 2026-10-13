@@ -76,3 +76,7 @@ uv run pytest tests/unit   # fast, no Docker needed
 uv run pytest              # adds end-to-end tests; needs Docker
 uv run pytest -m gpu       # serves real models; needs a free GPU
 ```
+
+## License
+
+[Apache 2.0](LICENSE). Forks and redistributions must keep the [`NOTICE`](NOTICE) file crediting the original author.

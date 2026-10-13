@@ -3,6 +3,8 @@ name = "host-your-own-llm"
 version = "0.1.0"
 description = "Serve an LLM with vLLM in Docker, with model weights in a local S3 bucket"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12"
 dependencies = [
     "httpx2>=2.13.1",
