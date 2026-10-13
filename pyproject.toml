@@ -1,0 +1,33 @@
+[project]
+name = "host-your-own-llm"
+version = "0.1.0"
+description = "Serve an LLM with vLLM in Docker, with model weights in a local S3 bucket"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=1.33",
+    "pydantic>=2",
+    "rich>=15",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+llm = "host_your_own_llm.cli:main"
+
+[dependency-groups]
+dev = [
+    "boto3>=1.43",
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not gpu'"
+markers = [
+    "functional: real CLI, model store and Hugging Face in an isolated project; needs Docker, no GPU",
+    "gpu: serves models on the GPU in an isolated project; opt in with `-m gpu`",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
