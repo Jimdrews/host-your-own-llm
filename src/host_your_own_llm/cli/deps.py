@@ -9,6 +9,7 @@ from ..adapters.huggingface import HubClient
 from ..adapters.store import ModelStore
 from ..project import find_project_root
 from ..services.catalog import ModelCatalog
+from ..services.discovery import ModelDiscovery
 from ..services.setup import SetupWizard
 from ..services.stack import StackService
 from ..services.vetting import ModelVetter
@@ -19,6 +20,7 @@ from ..ui.prompter import RichPrompter
 class Services:
     stack: StackService
     catalog: ModelCatalog
+    discovery: ModelDiscovery
 
 
 def build_services(root: Path | None = None) -> Services:
@@ -27,8 +29,9 @@ def build_services(root: Path | None = None) -> Services:
     compose = Compose(root)
     store = ModelStore(compose)
     prompter = RichPrompter()
-    vetter = ModelVetter(HubClient(), prompter)
+    hub = HubClient()
+    vetter = ModelVetter(hub, prompter)
     wizard = SetupWizard(env, vetter, prompter)
     stack = StackService(compose, store, env, prompter, configure=wizard.configure)
     catalog = ModelCatalog(env, store, vetter, prompter, stack)
-    return Services(stack=stack, catalog=catalog)
+    return Services(stack=stack, catalog=catalog, discovery=ModelDiscovery(hub, vetter))

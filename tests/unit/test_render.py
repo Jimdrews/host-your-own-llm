@@ -1,6 +1,6 @@
 import pytest
 
-from host_your_own_llm.domain import StackConfig, StackStatus
+from host_your_own_llm.domain import FitVerdict, ModelSuggestion, ModelSummary, StackConfig, StackStatus
 from host_your_own_llm.ui import render
 from host_your_own_llm.ui.console import console
 
@@ -41,3 +41,22 @@ def test_models_table_marks_active(capsys):
     console.print(render.models_table(["a/one", "b/two"], active="b/two"))
     lines = [line.split() for line in capsys.readouterr().out.splitlines() if line.strip()]
     assert lines == [["a/one"], ["*", "b/two"]]
+
+
+@pytest.mark.parametrize(("n", "text"), [(0, "0"), (999, "999"), (1790, "1.8k"), (30604529, "30.6M"), (2_500_000_000, "2.5B")])
+def test_compact_count(n, text):
+    assert render.compact_count(n) == text
+
+
+def test_suggestions_table(capsys):
+    gb = 1024**3
+    suggestions = [
+        ModelSuggestion(model=ModelSummary(model_id="org/a", downloads=1500, likes=12, size_bytes=gb), fit=FitVerdict.FITS),
+        ModelSuggestion(model=ModelSummary(model_id="org/b", gated=True, size_bytes=8 * gb), fit=FitVerdict.TIGHT),
+        ModelSuggestion(model=ModelSummary(model_id="org/c", size_bytes=20 * gb), fit=FitVerdict.TOO_BIG),
+    ]
+    console.print(render.suggestions_table(suggestions), width=200)
+    rows = {line.split()[1]: line for line in capsys.readouterr().out.splitlines()[1:] if line.strip()}
+    assert "1.0 GB" in rows["org/a"] and "1.5k" in rows["org/a"]
+    assert "tight fit, gated" in rows["org/b"]
+    assert "too big" in rows["org/c"]

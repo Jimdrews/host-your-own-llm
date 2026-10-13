@@ -1,4 +1,4 @@
-"""`models list|add|use|rm`."""
+"""`models list|search|add|use|rm`."""
 
 from typing import Annotated
 
@@ -9,7 +9,7 @@ from ..ui.console import console
 from . import deps
 from .errors import reports_errors
 
-app = typer.Typer(no_args_is_help=True, help="List, add, switch or remove stored models.")
+app = typer.Typer(no_args_is_help=True, help="Find, list, add, switch or remove stored models.")
 
 HfModelId = Annotated[str, typer.Argument(metavar="MODEL_ID", help="Hugging Face id, e.g. Qwen/Qwen2.5-1.5B-Instruct")]
 
@@ -24,6 +24,23 @@ def list_models() -> None:
     if not stored:
         console.print("No models stored yet. Add one with `uv run llm models add <id>`.")
     console.print(render.models_table(stored, active))
+
+
+@app.command()
+@reports_errors
+def search(
+    query: Annotated[str | None, typer.Argument(metavar="QUERY", help="filter by name, e.g. qwen")] = None,
+    trending: Annotated[bool, typer.Option("--trending", help="sort by what's trending instead of downloads")] = False,
+    limit: Annotated[int, typer.Option(min=1, help="how many models to show")] = 20,
+    show_all: Annotated[bool, typer.Option("--all", help="include models too big for your GPU")] = False,
+) -> None:
+    """Find popular models on Hugging Face that fit your GPU."""
+    suggestions = deps.build_services().discovery.suggest(query, trending=trending, limit=limit, include_too_big=show_all)
+    if not suggestions:
+        console.print("No matching models.")
+        return
+    console.print(render.suggestions_table(suggestions))
+    console.print("Add one with `uv run llm models add <id>`.")
 
 
 @app.command()

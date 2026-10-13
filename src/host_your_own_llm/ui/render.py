@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 from rich.table import Table
 
-from ..domain import SERVICES, GpuInfo, Preset, StackConfig, StackStatus
+from ..domain import SERVICES, FitVerdict, GpuInfo, ModelSuggestion, Preset, StackConfig, StackStatus
 from .console import console
 
 
@@ -60,6 +60,35 @@ def presets_table(presets: Iterable[Preset]) -> Table:
     for count, preset in enumerate(presets, 1):
         table.add_row(str(count), preset.model_id, preset.note)
     table.add_row(str(count + 1), "Other", "Enter any Hugging Face model id")
+    return table
+
+
+def compact_count(n: int) -> str:
+    """30604529 -> 30.6M, 1790 -> 1.8k."""
+    for size, suffix in ((1_000_000_000, "B"), (1_000_000, "M"), (1_000, "k")):
+        if n >= size:
+            return f"{n / size:.1f}{suffix}"
+    return str(n)
+
+
+FIT_NOTES = {FitVerdict.TIGHT: "[yellow]tight fit[/yellow]", FitVerdict.TOO_BIG: "[red]too big[/red]"}
+
+
+def suggestions_table(suggestions: Iterable[ModelSuggestion]) -> Table:
+    table = Table(show_header=True, header_style="bold", box=None)
+    table.add_column("#", justify="right")
+    table.add_column("Model")
+    table.add_column("Size", justify="right")
+    table.add_column("Downloads", justify="right")
+    table.add_column("Likes", justify="right")
+    table.add_column("Notes")
+    for i, suggestion in enumerate(suggestions, 1):
+        model = suggestion.model
+        notes = [note for note in (FIT_NOTES.get(suggestion.fit), "gated" if model.gated else None) if note]
+        table.add_row(
+            str(i), model.model_id, f"{model.size_gb:.1f} GB", compact_count(model.downloads),
+            compact_count(model.likes), ", ".join(notes),
+        )
     return table
 
 

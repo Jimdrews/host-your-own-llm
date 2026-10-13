@@ -1,6 +1,8 @@
 """Stand-ins for the adapters, so services run without Docker, Hugging Face or a terminal."""
 
-from host_your_own_llm.domain import ModelCheck, ServiceState, StackConfig
+from collections.abc import Iterator
+
+from host_your_own_llm.domain import ModelCheck, ModelSummary, ServiceState, StackConfig
 from host_your_own_llm.errors import ModelError
 
 
@@ -58,9 +60,22 @@ class FakeStore:
 
 
 class FakeHub:
-    def __init__(self, checks: dict[str, ModelCheck | ModelError] | None = None, tokens: dict[str, set[str]] | None = None):
+    def __init__(
+        self,
+        checks: dict[str, ModelCheck | ModelError] | None = None,
+        tokens: dict[str, set[str]] | None = None,
+        listing: list[ModelSummary] | ModelError | None = None,
+    ):
         self.checks = checks or {}
         self.tokens = tokens or {}  # model id -> tokens that can access it
+        self.listing = listing or []
+        self.searches: list[tuple[str | None, bool]] = []
+
+    def search_models(self, query: str | None = None, trending: bool = False) -> Iterator[ModelSummary]:
+        self.searches.append((query, trending))
+        if isinstance(self.listing, ModelError):
+            raise self.listing
+        yield from (m for m in self.listing if not query or query in m.model_id)
 
     def check_model(self, model_id: str, token: str | None) -> ModelCheck:
         result = self.checks[model_id]

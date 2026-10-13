@@ -4,7 +4,7 @@ import pytest
 from typer.testing import CliRunner
 
 from host_your_own_llm.cli import app, deps
-from host_your_own_llm.domain import StackStatus
+from host_your_own_llm.domain import FitVerdict, ModelSuggestion, ModelSummary, StackStatus
 from host_your_own_llm.errors import CliError
 
 runner = CliRunner()
@@ -91,3 +91,28 @@ def test_outside_the_repository(tmp_path, monkeypatch):
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 1
     assert "inside the host-your-own-llm repository" in result.output
+
+
+def test_models_search(services):
+    services.discovery.suggest.return_value = [
+        ModelSuggestion(model=ModelSummary(model_id="org/a", size_bytes=1024**3), fit=FitVerdict.FITS),
+    ]
+    result = runner.invoke(app, ["models", "search", "qwen", "--trending", "--limit", "5", "--all"])
+    assert result.exit_code == 0
+    services.discovery.suggest.assert_called_once_with("qwen", trending=True, limit=5, include_too_big=True)
+    assert "org/a" in result.output and "models add" in result.output
+
+
+def test_models_search_defaults(services):
+    services.discovery.suggest.return_value = []
+    result = runner.invoke(app, ["models", "search"])
+    assert result.exit_code == 0
+    services.discovery.suggest.assert_called_once_with(None, trending=False, limit=20, include_too_big=False)
+    assert "No matching models" in result.output
+
+
+def test_models_search_error(services):
+    services.discovery.suggest.side_effect = CliError("Couldn't reach Hugging Face: offline")
+    result = runner.invoke(app, ["models", "search"])
+    assert result.exit_code == 1
+    assert "Couldn't reach Hugging Face" in result.output

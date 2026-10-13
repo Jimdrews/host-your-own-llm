@@ -1,10 +1,15 @@
 """Model lookups on the Hugging Face Hub."""
 
-from huggingface_hub import auth_check, model_info
+from collections.abc import Iterator
+
+import httpx2
+from huggingface_hub import auth_check, list_models, model_info
 from huggingface_hub.errors import GatedRepoError, HfHubHTTPError, RepositoryNotFoundError
 
-from ..domain import ModelCheck
+from ..domain import ModelCheck, ModelSummary, weights_size
 from ..errors import ModelError
+
+SEARCH_FIELDS = ["downloads", "likes", "gated", "safetensors"]
 
 
 class HubClient:
@@ -30,3 +35,21 @@ class HubClient:
             return True
         except (GatedRepoError, RepositoryNotFoundError):
             return False
+
+    def search_models(self, query: str | None = None, trending: bool = False, max_scan: int = 200) -> Iterator[ModelSummary]:
+        """Text-generation models, most popular first, that have .safetensors weights."""
+        listing = list_models(
+            pipeline_tag="text-generation", search=query or None, sort="trending_score" if trending else "downloads",
+            limit=max_scan, expand=SEARCH_FIELDS,
+        )
+        try:
+            for info in listing:
+                # GGUF-only and other repos without safetensors can't be streamed from S3
+                if not info.safetensors or not info.safetensors.parameters:
+                    continue
+                yield ModelSummary(
+                    model_id=info.id, downloads=info.downloads or 0, likes=info.likes or 0,
+                    gated=bool(info.gated), size_bytes=weights_size(info.safetensors.parameters),
+                )
+        except httpx2.HTTPError as e:  # HfHubHTTPError included
+            raise ModelError(f"Couldn't reach Hugging Face: {e}")

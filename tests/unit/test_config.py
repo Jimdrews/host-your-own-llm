@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from host_your_own_llm.domain import StackConfig, default_served_name
+from host_your_own_llm.domain import StackConfig, default_served_name, weights_size
 
 
 def test_blank_values_take_defaults():
@@ -55,3 +55,10 @@ def test_round_trip():
 
 def test_default_served_name():
     assert default_served_name("Qwen/Qwen2.5-0.5B-Instruct") == "qwen2.5-0.5b-instruct"
+
+
+def test_weights_size():
+    assert weights_size({"BF16": 1000}) == 2000
+    assert weights_size({"BF16": 10, "F8_E4M3": 100, "F32": 1}) == 20 + 100 + 4
+    assert weights_size({"I32": 50, "F16": 10}) == 200 + 20  # AWQ packs 4-bit weights into I32
+    assert weights_size({"NEW_DTYPE": 10}) == 20

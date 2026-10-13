@@ -1,6 +1,8 @@
 import json
 import subprocess
+from types import SimpleNamespace
 
+import httpx2
 import pytest
 from huggingface_hub.errors import GatedRepoError
 
@@ -94,3 +96,46 @@ def test_no_gpu():
         raise FileNotFoundError
 
     assert gpu.detect_gpu(missing) is None
+
+
+def listed(model_id, parameters=None, gated=False, downloads=10, likes=1):
+    safetensors = SimpleNamespace(parameters=parameters) if parameters is not None else None
+    return SimpleNamespace(id=model_id, safetensors=safetensors, gated=gated, downloads=downloads, likes=likes)
+
+
+def test_search_models(monkeypatch):
+    calls = []
+
+    def fake_list_models(**kwargs):
+        calls.append(kwargs)
+        return iter([
+            listed("org/gguf-only"),
+            listed("org/empty", parameters={}),
+            listed("org/open", parameters={"BF16": 1000}),
+            listed("org/gated", parameters={"F32": 10}, gated="manual"),
+        ])
+
+    monkeypatch.setattr(huggingface, "list_models", fake_list_models)
+    models = list(huggingface.HubClient().search_models("org", trending=True))
+
+    assert [(m.model_id, m.size_bytes, m.gated) for m in models] == [("org/open", 2000, False), ("org/gated", 40, True)]
+    assert calls[0]["search"] == "org"
+    assert calls[0]["sort"] == "trending_score"
+    assert calls[0]["pipeline_tag"] == "text-generation"
+
+
+def test_search_models_defaults_to_downloads(monkeypatch):
+    calls = []
+    monkeypatch.setattr(huggingface, "list_models", lambda **kwargs: calls.append(kwargs) or iter([]))
+    assert list(huggingface.HubClient().search_models()) == []
+    assert calls[0]["sort"] == "downloads" and calls[0]["search"] is None
+
+
+def test_search_models_offline(monkeypatch):
+    def offline(**kwargs):
+        raise httpx2.ConnectError("no network")
+        yield
+
+    monkeypatch.setattr(huggingface, "list_models", offline)
+    with pytest.raises(ModelError, match="Couldn't reach Hugging Face"):
+        list(huggingface.HubClient().search_models())

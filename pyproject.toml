@@ -5,6 +5,7 @@ description = "Serve an LLM with vLLM in Docker, with model weights in a local S
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "httpx2>=2.13.1",
     "huggingface-hub>=1.33",
     "pydantic>=2",
     "rich>=15",

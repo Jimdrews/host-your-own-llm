@@ -51,6 +51,13 @@ def test_missing_model_id(project, command):
     assert "Missing argument 'MODEL_ID'" in result.stderr
 
 
+def test_search_lists_popular_models(project):
+    result = project.llm("models", "search", "qwen", "--limit", "3", "--all", timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.count("Qwen/") == 3
+    assert "models add" in result.stdout
+
+
 def test_add_copies_model_into_store(project):
     result = project.llm("models", "add", LLAMA)
     assert result.returncode == 0, result.stdout + result.stderr
