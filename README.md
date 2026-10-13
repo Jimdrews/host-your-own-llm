@@ -1,68 +1,77 @@
 # host-your-own-llm
 
-Serve an LLM through vLLM's OpenAI-compatible API in Docker, with model weights kept in an S3 bucket instead of in the image or the serving container.
+Run any Hugging Face model on your own GPU behind an OpenAI-compatible API.
+Models are downloaded once into a local store and reused, so switching between them is quick.
 
-The repo has two independent parts:
+## Requirements
 
-- **`image/`**: a self-contained vLLM image, configured only through environment variables. Build and deploy it however you like.
-- **The `llm` CLI + `docker-compose.yml`**: an optional local stack that runs the image next to a local S3 store ([RustFS](https://github.com/rustfs/rustfs)).
+- Docker with NVIDIA GPU support (NVIDIA Container Toolkit, or Docker Desktop with WSL2)
+- [uv](https://docs.astral.sh/uv/)
 
-## Local stack
-
-Requires Docker with NVIDIA GPU support (NVIDIA Container Toolkit / Docker Desktop with WSL2) and [uv](https://docs.astral.sh/uv/).
+## Quick start
 
 ```sh
-uv run llm serve               # first run asks which model to use, then starts everything
-uv run llm status              # what's running, the active model and the endpoint
-uv run llm models list         # stored models (* = active)
-uv run llm models add <id>     # copy a Hugging Face model into the store
-uv run llm models use <id>     # switch the served model (adds it first if needed)
-uv run llm models rm <id>      # delete a stored model
-uv run llm down                # stop everything; stored models are kept
-uv run llm down --purge        # stop and delete all stored models
+uv run llm serve
 ```
 
-`serve --reconfigure` asks the setup questions again, including a guided model picker. Any command run without its required arguments shows its help.
+The first run asks which model to use, the context length and whether to require an API key, then starts everything and prints a ready-to-use `curl` command.
 
-- API: http://localhost:8000/v1
-- S3 API: http://localhost:9000, web console: http://localhost:9001 (log in with `S3_ACCESS_KEY` / `S3_SECRET_KEY` from `.env`)
-- Stored models live in the `model-store` volume.
+The API is at `http://localhost:8000/v1` and works with any OpenAI client:
 
-## Image
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="<VLLM_API_KEY or anything>")
+reply = client.chat.completions.create(model="qwen2.5-0.5b-instruct", messages=[{"role": "user", "content": "Hello!"}])
+```
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `llm serve` | Start the model store and the model server |
+| `llm serve --reconfigure` | Ask the setup questions again |
+| `llm status` | Show what's running, the active model and the endpoint |
+| `llm models list` | List stored models (`*` marks the active one) |
+| `llm models add <id>` | Download a Hugging Face model into the store |
+| `llm models use <id> [--name <name>]` | Switch the served model, downloading it first if needed |
+| `llm models rm <id> [-y]` | Delete a stored model |
+| `llm down` | Stop everything; stored models are kept |
+| `llm down --purge` | Stop everything and delete all stored models |
+
+Prefix each with `uv run`. Add `--help` to any command for details.
+
+## Configuration
+
+Settings live in `.env`, written by the setup questions. You can also edit it by hand; the next `llm serve` picks up the changes.
+
+| Setting | Purpose |
+|---|---|
+| `MODEL` | The model to serve |
+| `SERVED_MODEL_NAME` | The model name used in API requests |
+| `MAX_MODEL_LEN` | Context length; lower it if the model runs out of GPU memory |
+| `VLLM_API_KEY` | Require `Authorization: Bearer <key>` on requests |
+| `HF_TOKEN` | Hugging Face token, needed for gated models such as Llama |
+| `EXTRA_ARGS` | Any other `vllm serve` flags, e.g. `--enable-prefix-caching` |
+| `API_PORT` | API port (default `8000`) |
+
+See [`.env.example`](.env.example) for every setting.
+
+## Using the image without the CLI
+
+The vLLM image in `image/` runs on its own and takes the same settings as environment variables:
 
 ```sh
 docker build -t host-your-own-llm/vllm image/
+docker run --gpus all --ipc=host -p 8000:8000 -e MODEL=Qwen/Qwen2.5-0.5B-Instruct host-your-own-llm/vllm
 ```
 
-The container runs `vllm serve` from environment variables:
+`MODEL` can be a Hugging Face id or an `s3://bucket/path`. For S3, also pass `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_DEFAULT_REGION`, plus `AWS_ENDPOINT_URL` and `RUNAI_STREAMER_S3_USE_VIRTUAL_ADDRESSING=0` for stores other than AWS.
 
-| Variable | Purpose |
-|---|---|
-| `MODEL` | **Required.** `s3://bucket/path`, a Hugging Face id, or a local path. `s3://` models stream straight to the GPU (`--load-format runai_streamer`) and must use `.safetensors` weights. |
-| `MAX_MODEL_LEN` | Context length cap. |
-| `GPU_MEMORY_UTILIZATION` | Fraction of GPU memory vLLM may use (default `0.90`). |
-| `SERVED_MODEL_NAME` | Model name for API requests (default: `MODEL`). |
-| `VLLM_API_KEY` | Require `Authorization: Bearer <key>`. |
-| `EXTRA_ARGS` | Any other `vllm serve` flags. |
-| `VLLM_PORT` | Listen port (default `8000`). |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` | S3 credentials; on AWS an IAM role works instead. |
-| `AWS_ENDPOINT_URL`, `RUNAI_STREAMER_S3_USE_VIRTUAL_ADDRESSING=0` | Only for S3-compatible stores other than AWS. |
-
-Arguments after the image name are passed straight to `vllm serve`. Run with `--gpus all --ipc=host`. Pin a different vLLM release with `--build-arg VLLM_VERSION=<tag>`.
-
-The image also carries the model store tool, which can run as a one-off job in any deployment (it reads `S3_BUCKET`, the `AWS_*` variables and `HF_TOKEN`):
+## Tests
 
 ```sh
-docker run --rm --entrypoint python3 <image> /opt/model_store.py seed <hf-id>   # or: list, rm <id>
+uv run pytest tests/unit   # fast, no Docker needed
+uv run pytest              # adds end-to-end tests; needs Docker
+uv run pytest -m gpu       # serves real models; needs a free GPU
 ```
-
-`seed` with no id seeds whatever `MODEL` points to, and skips models already in the bucket.
-
-## Testing
-
-```sh
-uv run pytest            # unit + functional tests (~3-4 min; needs Docker and network, no GPU)
-uv run pytest -m gpu     # serving on the GPU (~5-10 min; downloads ~1.3 GB)
-```
-
-The functional and GPU tests run the real `llm` commands against a real model store and real Hugging Face downloads, in an isolated copy of the project (compose projects `hyol-test` / `hyol-gpu-test`, ports 18000/19000/19001, their own volume and `.env`). They never touch your own stack, `.env` or stored models, and clean up after themselves. The GPU tests need the GPU free, so run `uv run llm down` first.
